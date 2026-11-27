@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data directories (too large for git)
+data/clean_fabric_videos/
+data/patches/
+data/validation_patches/
+
+# Trained models (too large for git)
+trained_models/*.pt
+trained_models/*.pth
+
+# Database
+*.db
+*.sqlite
+
+# Uploads and temporary files
+uploads/
+temp/
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# SSL Certificates
+certs/

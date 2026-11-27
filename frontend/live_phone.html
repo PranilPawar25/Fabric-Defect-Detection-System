@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fabric Live Scanner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh; /* Dynamic viewport height for mobile */
+            position: fixed;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 12px 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            flex-shrink: 0;
+            height: 80px;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .status-pill {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            background: rgba(255,255,255,0.2);
+            margin-top: 5px;
+        }
+
+        .status-pill.connected {
+            background: rgba(16,185,129,0.3);
+        }
+
+        .camera-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            min-height: 0; /* Important for flexbox */
+        }
+
+        #video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #overlay-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .stats-overlay {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            background: rgba(0,0,0,0.75);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+
+        .stat-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .stat-label {
+            color: #aaa;
+        }
+
+        .stat-value {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .controls {
+            background: #1a1a1a;
+            padding: 12px 15px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+            border-top: 1px solid #333;
+            min-height: 70px;
+            height: auto;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1 1 calc(50% - 10px);
+            min-width: 140px;
+            max-width: 180px;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        .control-btn.start {
+            background: #10b981;
+            color: white;
+        }
+
+        .control-btn.stop {
+            background: #ef4444;
+            color: white;
+        }
+
+        .control-btn.flip {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 100;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-banner {
+            background: #ef4444;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 14px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 200;
+            display: none;
+        }
+
+        .error-banner.show {
+            display: block;
+        }
+
+        .fps-counter {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .wake-lock-indicator {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            display: none;
+        }
+
+        .wake-lock-indicator.active {
+            display: block;
+            background: rgba(16,185,129,0.7);
+        }
+
+        /* Ensure controls are always visible on all screen sizes */
+        @media screen and (max-height: 600px) {
+            .header {
+                padding: 8px 15px;
+                height: 65px;
+            }
+            
+            .header h1 {
+                font-size: 16px;
+                margin-bottom: 3px;
+            }
+            
+            .controls {
+                padding: 8px 15px;
+                min-height: 60px;
+            }
+            
+            .control-btn {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+        }
+
+        /* Stack buttons on very narrow screens */
+        @media screen and (max-width: 380px) {
+            .control-btn {
+                flex: 1 1 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-banner" id="error-banner"></div>
+
+    <div class="header">
+        <h1>📷 Fabric Live Scanner</h1>
+        <div class="status-pill" id="status-pill">Initializing...</div>
+    </div>
+
+    <div class="camera-container">
+        <video id="video-feed" playsinline autoplay muted></video>
+        <canvas id="overlay-canvas"></canvas>
+        
+        <div class="stats-overlay" id="stats-overlay" style="display: none;">
+            <div class="stat-row">
+                <span class="stat-label">Frames:</span>
+                <span class="stat-value" id="frame-count">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Defects:</span>
+                <span class="stat-value" id="defect-count">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Length:</span>
+                <span class="stat-value" id="est-length">0.0 m</span>
+            </div>
+        </div>
+
+        <div class="fps-counter" id="fps-counter">FPS: 0</div>
+        <div class="wake-lock-indicator" id="wake-lock-indicator">🔒 Screen Locked</div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Initializing camera...</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="control-btn start" id="start-btn" disabled>
+            ▶ Start
+        </button>
+        <button class="control-btn stop" id="stop-btn" disabled style="display: none;">
+            ⏹ Stop
+        </button>
+        <button class="control-btn flip" id="flip-btn" disabled>
+            🔄 Flip
+        </button>
+    </div>
+
+    <script src="/static/live_phone.js"></script>
+</body>
+</html>

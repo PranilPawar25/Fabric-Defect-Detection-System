@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fabric Defect Detection System</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">Fabric Defect Detection System</h1>
+                <div class="status-bar">
+                    <div class="status-item">
+                        <span class="status-label">Mode:</span>
+                        <span id="detection-mode" class="status-value">Loading...</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Status:</span>
+                        <span id="system-status" class="status-value status-ready">Ready</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel: Analysis -->
+            <div class="left-panel">
+                <!-- Tab Navigation -->
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="image">Image Analysis</button>
+                    <button class="tab-button" data-tab="video">Video Analysis</button>
+                    <button class="tab-button" data-tab="live">Live Stream</button>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="tab-content">
+                    <!-- Image Analysis Tab -->
+                    <div id="image-tab" class="tab-panel active">
+                        <div class="upload-section">
+                            <h3>Upload Fabric Image</h3>
+                            <input type="file" id="image-upload" accept="image/*" class="file-input">
+                            <label for="image-upload" class="file-label">
+                                <span class="file-icon">📁</span>
+                                <span>Choose Image</span>
+                            </label>
+                            <button id="analyze-image-btn" class="btn btn-primary" disabled>Analyze Image</button>
+                        </div>
+                        
+                        <div id="image-preview-container" class="preview-container" style="display: none;">
+                            <canvas id="image-canvas"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Video Analysis Tab -->
+                    <div id="video-tab" class="tab-panel">
+                        <div class="upload-section">
+                            <h3>Upload Fabric Video</h3>
+                            <input type="file" id="video-upload" accept="video/*" class="file-input">
+                            <label for="video-upload" class="file-label">
+                                <span class="file-icon">🎥</span>
+                                <span>Choose Video</span>
+                            </label>
+                            <button id="analyze-video-btn" class="btn btn-primary" disabled>Analyze Video</button>
+                        </div>
+                        
+                        <div id="video-progress" class="progress-container" style="display: none;">
+                            <div class="progress-bar">
+                                <div id="video-progress-fill" class="progress-fill"></div>
+                            </div>
+                            <p id="video-progress-text" class="progress-text">Processing...</p>
+                        </div>
+                        
+                        <div id="video-preview-container" class="preview-container" style="display: none;">
+                            <canvas id="video-canvas"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Live Stream Tab -->
+                    <div id="live-tab" class="tab-panel">
+                        <!-- Hidden stubs for old app.js compatibility -->
+                        <button id="analyze-stream-btn" style="display: none;"></button>
+                        <div id="stream-status" style="display: none;"></div>
+                        
+                        <!-- Status Chip -->
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <span id="live-status-chip" style="display: inline-block; padding: 8px 16px; border-radius: 20px; background: #6b7280; color: white; font-weight: 600;">
+                                No Active Session
+                            </span>
+                        </div>
+                        
+                        <!-- Start Button (shown when no session) -->
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <button id="live-start-btn" class="btn btn-primary">Start Live Stream</button>
+                        </div>
+                        
+                        <!-- Connect Your Phone Card -->
+                        <div id="live-connect-card" style="display: none; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                            <h3 style="text-align: center; color: #667eea; margin-bottom: 20px;">📱 Connect Your Phone</h3>
+                            
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <img id="live-qr-code" src="" alt="QR Code" style="display: none; width: 200px; height: 200px; margin: 0 auto; background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                                <p style="margin-top: 10px; color: #666; font-size: 14px;">Scan this QR code with your phone</p>
+                            </div>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Or enter this URL on your phone:</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" id="live-phone-url" readonly style="flex: 1; padding: 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; background: #f9fafb;">
+                                    <button id="live-copy-btn" class="btn btn-secondary">📋 Copy</button>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; font-size: 14px; color: #374151;">
+                                <strong>Instructions:</strong><br>
+                                1. Make sure your phone is on the same Wi-Fi<br>
+                                2. Open the URL on your phone<br>
+                                3. Accept the certificate warning (tap "Advanced" → "Proceed")<br>
+                                4. Allow camera access<br>
+                                5. Point camera at fabric and tap "Start Camera"<br>
+                                6. Defects will appear in the log below
+                            </div>
+                        </div>
+                        
+                        <!-- Live Stats -->
+                        <div id="live-stats" style="display: none; background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                                <div>
+                                    <div style="color: #6b7280; font-size: 12px; margin-bottom: 4px;">Frames Processed</div>
+                                    <div id="live-stat-frames" style="font-size: 24px; font-weight: 600; color: #111827;">0</div>
+                                </div>
+                                <div>
+                                    <div style="color: #6b7280; font-size: 12px; margin-bottom: 4px;">Defects Logged</div>
+                                    <div id="live-stat-defects" style="font-size: 24px; font-weight: 600; color: #111827;">0</div>
+                                </div>
+                                <div>
+                                    <div style="color: #6b7280; font-size: 12px; margin-bottom: 4px;">Est. Length</div>
+                                    <div id="live-stat-length" style="font-size: 24px; font-weight: 600; color: #111827;">0.0 m</div>
+                                </div>
+                                <div>
+                                    <div style="color: #6b7280; font-size: 12px; margin-bottom: 4px;">Mode</div>
+                                    <div id="live-stat-mode" style="font-size: 14px; font-weight: 600; color: #111827;">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- End Session Button -->
+                        <div style="text-align: center;">
+                            <button id="live-end-btn" class="btn btn-danger" style="display: none;">End Session</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuration Section -->
+                <div class="config-section">
+                    <h3>Detection Settings</h3>
+                    <div class="config-grid">
+                        <div class="config-item">
+                            <label for="sensitivity-slider">
+                                Sensitivity: <span id="sensitivity-value">2.5</span>
+                            </label>
+                            <input type="range" id="sensitivity-slider" class="slider" 
+                                   min="0.5" max="5.0" step="0.1" value="2.5">
+                        </div>
+                        
+                        <div class="config-item">
+                            <label for="feed-speed-input">
+                                Feed Speed (m/min):
+                            </label>
+                            <input type="number" id="feed-speed-input" class="number-input" 
+                                   value="10.0" min="0.1" step="0.1">
+                        </div>
+                        
+                        <div class="config-item">
+                            <label for="min-confidence-slider">
+                                Min Confidence: <span id="min-confidence-value">30</span>%
+                            </label>
+                            <input type="range" id="min-confidence-slider" class="slider" 
+                                   min="0" max="100" step="5" value="30">
+                        </div>
+                    </div>
+                    
+                    <div class="config-buttons">
+                        <button id="update-config-btn" class="btn btn-secondary">Apply Settings</button>
+                        <button id="reset-config-btn" class="btn btn-outline">Reset to Default</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Results & Log -->
+            <div class="right-panel">
+                <!-- Results Summary -->
+                <div class="results-section">
+                    <h3>Detection Results</h3>
+                    <div id="results-summary" class="results-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">Total Defects:</span>
+                            <span id="total-defects" class="summary-value">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Holes:</span>
+                            <span id="count-hole" class="summary-value">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Stains:</span>
+                            <span id="count-stain" class="summary-value">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Knots:</span>
+                            <span id="count-knot" class="summary-value">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Double Knots:</span>
+                            <span id="count-double_knot" class="summary-value">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Broken Threads:</span>
+                            <span id="count-broken_thread" class="summary-value">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Defect Log -->
+                <div class="log-section">
+                    <div class="log-header">
+                        <h3>Defect Log</h3>
+                        <div class="log-controls">
+                            <button id="export-log-btn" class="btn btn-small">Export CSV</button>
+                            <button id="clear-log-btn" class="btn btn-small btn-danger">Clear Log</button>
+                        </div>
+                    </div>
+                    
+                    <div id="defect-log" class="defect-log">
+                        <p class="log-empty">No defects detected yet</p>
+                    </div>
+                </div>
+
+                <!-- Color Legend -->
+                <div class="legend-section">
+                    <h4>Defect Type Legend</h4>
+                    <div class="legend-grid">
+                        <div class="legend-item">
+                            <span class="legend-color" style="background-color: rgb(0, 0, 255);"></span>
+                            <span>Hole</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background-color: rgb(0, 165, 255);"></span>
+                            <span>Stain</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background-color: rgb(0, 255, 0);"></span>
+                            <span>Knot</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background-color: rgb(255, 255, 0);"></span>
+                            <span>Double Knot</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background-color: rgb(255, 0, 255);"></span>
+                            <span>Broken Thread</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+    <script src="/static/live_viewer.js"></script>
+</body>
+</html>
